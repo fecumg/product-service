@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author Truong Duc Duong
@@ -121,9 +122,8 @@ public class CategoryServiceImpl implements CategoryService {
     public Result getStackedCategories(int id) {
         Result result;
         try {
-            List<Category> stackedCategories = new ArrayList<>();
-            stackedCategories.add(categoryRepository.findById(id).get());
-            stackedCategories = stackCategories(id, stackedCategories);
+            List<CategoryMapping> mappings = categoryMappingRepository.findAll();
+            List<Category>stackedCategories = stackCategories(id, mappings);
 
             result = new Result(0, "Success", stackedCategories);
         } catch (Exception e) {
@@ -132,16 +132,16 @@ public class CategoryServiceImpl implements CategoryService {
         return result;
     }
 
-    private List<Category> stackCategories(int id, List<Category> stackedCategories) {
-        List<CategoryMapping> mappings = categoryMappingRepository.findAll();
+    private List<Category> stackCategories(int id, List<CategoryMapping> mappings) {
+        List<Category> stackedCategories = new ArrayList<>();
+        stackedCategories.add(categoryRepository.findById(id).get());
+
         for (CategoryMapping mapping: mappings
              ) {
             if (mapping.getParentId() == id) {
                 int childId = mapping.getChildId();
-                stackedCategories.add(categoryRepository.findById(childId).get());
-
 //                Recursion
-                stackCategories(childId, stackedCategories);
+                stackedCategories.addAll(stackCategories(childId, mappings));
             }
         }
         return stackedCategories;
