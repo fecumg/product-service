@@ -153,14 +153,13 @@ public class CategoryServiceImpl implements CategoryService {
 //        browse all next level children's ids
         for (Integer nextLevelChildId: nextLevelChildIds
              ) {
-//            delete mappings that consist of deleted category's id and its children's ids
-            CategoryMapping mapping = getMappingByChildAndParent(nextLevelChildId, id, categoryMappings);
-            categoryMappingRepository.delete(mapping);
-
 //            if a child category does NOT have another parent, delete it as well
             if (!checkMultiParentCategory(nextLevelChildId, categoryMappings)) {
                 categoryRepository.deleteById(nextLevelChildId);
             }
+//            delete mappings that consist of deleted category's id and its children's ids
+            CategoryMapping mapping = getMappingByChildAndParent(nextLevelChildId, id, categoryMappings);
+            categoryMappingRepository.delete(mapping);
 
 //            Recursion. Call the function itself and the parameter now is the next level children's ids
             deleteStackedCategories(nextLevelChildId, categoryMappings);

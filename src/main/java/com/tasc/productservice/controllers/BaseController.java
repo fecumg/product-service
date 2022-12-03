@@ -36,12 +36,14 @@ public class BaseController {
         return new ResponseEntity<>(apiDataResponse, httpStatus);
     }
 
-    public ApiDataResponse getBindingErrorApiResponse(BindingResult bindingResult) {
+    public ResponseEntity<ApiDataResponse> createBindingErrorResponse(BindingResult bindingResult) {
         List<String> messages = new ArrayList<>();
         for (ObjectError error: bindingResult.getAllErrors()
         ) {
             messages.add(error.getDefaultMessage());
         }
-        return new ApiDataResponse(messages);
+        ApiDataResponse apiDataResponse = new ApiDataResponse(messages);
+        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<>(apiDataResponse, httpStatus);
     }
 }

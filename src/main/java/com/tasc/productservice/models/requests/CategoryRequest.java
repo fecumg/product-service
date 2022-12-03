@@ -1,5 +1,8 @@
 package com.tasc.productservice.models.requests;
 
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +17,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CategoryRequest {
-    private String name, description, uri;
+    @NotNull(message = "Name must be filled")
+    @Size(min = 5, max = 100, message = "Name cannot be less than 5 or exceed 100 characters")
+    private String name;
+
+    @NotNull(message = "description must be filled")
+    @Size(min = 5, max = 200, message = "description cannot be less than 5 or exceed 200 characters")
+    private String description;
+
+    @NotNull(message = "Uri must be filled")
+    @Size(min = 5, max = 500, message = "Uri cannot be less than 5 or exceed 500 characters")
+    private String uri;
+
+    @Nullable
     private List<Integer> parentIds;
 }
