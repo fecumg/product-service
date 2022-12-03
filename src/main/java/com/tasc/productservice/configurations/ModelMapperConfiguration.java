@@ -18,5 +18,4 @@ public class ModelMapperConfiguration {
                 .setMatchingStrategy(MatchingStrategies.STRICT);
         return modelMapper;
     }
-
 }

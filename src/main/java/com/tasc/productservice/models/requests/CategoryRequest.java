@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author Truong Duc Duong
  */
@@ -11,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductRequest {
-    private String barcode, name, image, description, content;
+public class CategoryRequest {
+    private String name, description, uri;
+    private List<Integer> parentIds;
 }

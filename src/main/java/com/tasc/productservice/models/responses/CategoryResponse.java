@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author Truong Duc Duong
  */
@@ -11,8 +13,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductResponse {
+public class CategoryResponse {
     private int id;
-    private String barcode, name, image, description, content;
-
+    private String name, description, uri;
+    private List<Integer> childIds;
 }
