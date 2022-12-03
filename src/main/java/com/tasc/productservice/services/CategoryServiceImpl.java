@@ -8,7 +8,6 @@ import com.tasc.productservice.models.responses.CategoryResponse;
 import com.tasc.productservice.models.responses.ProductResponse;
 import com.tasc.productservice.repositories.CategoryMappingRepository;
 import com.tasc.productservice.repositories.CategoryRepository;
-import io.swagger.models.auth.In;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryMappingRepository categoryMappingRepository;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result save(CategoryRequest categoryRequest) {
         Result result;
         try {
@@ -53,7 +52,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result update(int id, CategoryRequest categoryRequest) {
         Result result;
         try {
@@ -70,7 +69,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result delete(int id) {
         Result result;
         try {

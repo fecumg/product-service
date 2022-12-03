@@ -1,13 +1,11 @@
 package com.tasc.productservice.services;
 
 import com.tasc.productservice.models.CategoryMapping;
-import com.tasc.productservice.models.Product;
 import com.tasc.productservice.models.Result;
-import com.tasc.productservice.models.responses.ProductResponse;
 import com.tasc.productservice.repositories.CategoryMappingRepository;
-import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +19,7 @@ public class CategoryMappingServiceImpl implements CategoryMappingService{
     private CategoryMappingRepository categoryMappingRepository;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result save(CategoryMapping categoryMapping) {
         Result result;
         try {
@@ -33,6 +32,7 @@ public class CategoryMappingServiceImpl implements CategoryMappingService{
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result delete(int id) {
         Result result;
         try {

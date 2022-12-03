@@ -36,7 +36,7 @@ public class BaseController {
         return new ResponseEntity<>(apiDataResponse, httpStatus);
     }
 
-    public ApiDataResponse getBindingErrorMessages(BindingResult bindingResult) {
+    public ApiDataResponse getBindingErrorApiResponse(BindingResult bindingResult) {
         List<String> messages = new ArrayList<>();
         for (ObjectError error: bindingResult.getAllErrors()
         ) {

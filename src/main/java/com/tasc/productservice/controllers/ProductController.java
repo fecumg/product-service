@@ -24,7 +24,7 @@ public class ProductController extends BaseController {
     public ResponseEntity<ApiDataResponse> create(@Valid @RequestBody ProductRequest productRequest, BindingResult bindingResult) {
         Result result;
         if (bindingResult.hasErrors()) {
-            return createResponse(getBindingErrorMessages(bindingResult), HttpStatus.BAD_REQUEST);
+            return createResponse(getBindingErrorApiResponse(bindingResult), HttpStatus.BAD_REQUEST);
         } else {
             result = productService.save(productRequest);
             return createResponse(result);
