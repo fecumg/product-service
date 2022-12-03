@@ -153,7 +153,7 @@ public class CategoryServiceImpl implements CategoryService {
 //        browse all next level children's ids
         for (Integer nextLevelChildId: nextLevelChildIds
              ) {
-//            if a child category does NOT have another parent, delete it as well
+//            if a child category does NOT have another parent, delete it
             if (!checkMultiParentCategory(nextLevelChildId, categoryMappings)) {
                 categoryRepository.deleteById(nextLevelChildId);
             }
