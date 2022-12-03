@@ -34,15 +34,13 @@ public class CategoryController extends BaseController {
 
     @GetMapping("/stackedCategories/{id}")
     public ResponseEntity<ApiDataResponse> getStackedCategories(@PathVariable("id") int id) {
-        Result result;
-        result = categoryService.getStackedCategories(id);
+        Result result = categoryService.getStackedCategories(id);
         return createResponse(result);
     }
 
     @PostMapping("/deleteCategory/{id}")
     public ResponseEntity<ApiDataResponse> deleteStackedCategories(@PathVariable("id") int id) {
-        Result result;
-        result = categoryService.delete(id);
+        Result result = categoryService.delete(id);
         return createResponse(result);
     }
 }
