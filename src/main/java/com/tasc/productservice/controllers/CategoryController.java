@@ -6,7 +6,7 @@ import com.tasc.productservice.models.requests.CategoryRequest;
 import com.tasc.productservice.services.CategoryServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -21,8 +21,8 @@ public class CategoryController extends BaseController {
     @Autowired
     private CategoryServiceImpl categoryService;
 
-    @PostMapping("/newCategory")
-    public ResponseEntity<ApiDataResponse> create(@Valid @RequestBody CategoryRequest categoryRequest, BindingResult bindingResult) {
+    @PostMapping(value = "/newCategory", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<ApiDataResponse> create(@Valid @ModelAttribute CategoryRequest categoryRequest, BindingResult bindingResult) {
         Result result;
         if (bindingResult.hasErrors()) {
             return createBindingErrorResponse(bindingResult);

@@ -11,12 +11,13 @@ import com.tasc.productservice.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Optional;
 
 /**
  * @author Truong Duc Duong
@@ -37,15 +38,25 @@ public class CategoryServiceImpl implements CategoryService {
         try {
             Category category = modelMapper.map(categoryRequest, Category.class);
             Category newCategory = categoryRepository.save(category);
-
-            for (int parentId: categoryRequest.getParentIds()
-                 ) {
-                CategoryMapping categoryMapping = new CategoryMapping(parentId, newCategory.getId());
-                categoryMappingRepository.save(categoryMapping);
-            }
             CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
+            List<CategoryMapping> categoryMappings = categoryMappingRepository.findAll();
 
-            result = new Result(0, "Success", categoryResponse);
+            List<Integer> parentIds = categoryRequest.getParentIds();
+            if (parentIds.isEmpty()) {
+                result = new Result(0, "Success, 0 mappings added", categoryResponse);
+            } else {
+                int parentCount = 0;
+                for (int parentId: parentIds
+                ) {
+                    Optional<Category> optionalParentCategory = categoryRepository.findById(parentId);
+                    if (parentId != newCategory.getId() && optionalParentCategory.isPresent()) {
+                        CategoryMapping categoryMapping = new CategoryMapping(parentId, newCategory.getId());
+                        categoryMappingRepository.save(categoryMapping);
+                        parentCount ++;
+                    }
+                }
+                result = new Result(0, "Success, " + parentCount + " mapping(s) added", categoryResponse);
+            }
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
@@ -90,12 +101,18 @@ public class CategoryServiceImpl implements CategoryService {
         try {
             List<Category> categories = categoryRepository.findAll();
             List<CategoryMapping> categoryMappings = categoryMappingRepository.findAll();
-            List<CategoryResponse> categoryResponses = modelMapper.map(categories, new TypeToken<List<ProductResponse>>() {}.getType());
-            for (CategoryResponse categoryResponse: categoryResponses
-                 ) {
-                categoryResponse.setChildIds(getNextLevelChildIds(categoryResponse.getId(), categoryMappings));
+            if (categories.isEmpty()) {
+                result = new Result(1, "No categories fetched");
+            } else if (categoryMappings.isEmpty()) {
+                result = new Result(1, "No category mappings fetched");
+            } else {
+                List<CategoryResponse> categoryResponses = modelMapper.map(categories, new TypeToken<List<ProductResponse>>() {}.getType());
+                for (CategoryResponse categoryResponse: categoryResponses
+                ) {
+                    categoryResponse.setChildIds(getNextLevelChildIds(categoryResponse.getId(), categoryMappings));
+                }
+                result = new Result(0, "Data fetched", categoryResponses);
             }
-            result = new Result(0, "Data fetched", categoryResponses);
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
@@ -107,11 +124,15 @@ public class CategoryServiceImpl implements CategoryService {
         Result result;
         try {
             List<CategoryMapping> categoryMappings = categoryMappingRepository.findAll();
-            Category category = categoryRepository.findById(id).get();
-            CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
-            categoryResponse.setChildIds(getNextLevelChildIds(id, categoryMappings));
+            Optional<Category> optionalCategory = categoryRepository.findById(id);
+            if (optionalCategory.isPresent()) {
+                CategoryResponse categoryResponse = modelMapper.map(optionalCategory.get(), CategoryResponse.class);
+                categoryResponse.setChildIds(getNextLevelChildIds(id, categoryMappings));
 
-            result = new Result(0, "Success", categoryResponse);
+                result = new Result(0, "Success", categoryResponse);
+            } else {
+                result = new Result(1, "fail to retrieve data");
+            }
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
@@ -134,14 +155,17 @@ public class CategoryServiceImpl implements CategoryService {
 
     private List<Category> stackCategories(int id, List<CategoryMapping> mappings) {
         List<Category> stackedCategories = new ArrayList<>();
-        stackedCategories.add(categoryRepository.findById(id).get());
+        Optional<Category> optionalCategory = categoryRepository.findById(id);
+        if (optionalCategory.isPresent()) {
+            stackedCategories.add(optionalCategory.get());
 
-        for (CategoryMapping mapping: mappings
-             ) {
-            if (mapping.getParentId() == id) {
-                int childId = mapping.getChildId();
+            for (CategoryMapping mapping: mappings
+            ) {
+                if (mapping.getParentId() == id) {
+                    int childId = mapping.getChildId();
 //                Recursion
-                stackedCategories.addAll(stackCategories(childId, mappings));
+                    stackedCategories.addAll(stackCategories(childId, mappings));
+                }
             }
         }
         return stackedCategories;
