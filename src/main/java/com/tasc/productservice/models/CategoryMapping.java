@@ -14,15 +14,21 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryMapping {
+public class CategoryMapping extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    private int parentId, childId;
+    @ManyToOne()
+    @JoinColumn(name = "parent_id")
+    private Category parent ;
 
-    public CategoryMapping(int parentId, int childId) {
-        this.parentId = parentId;
-        this.childId = childId;
+    @ManyToOne
+    @JoinColumn(name = "child_id")
+    private Category child;
+
+    public CategoryMapping(Category parent, Category child) {
+        this.parent = parent;
+        this.child = child;
     }
 }

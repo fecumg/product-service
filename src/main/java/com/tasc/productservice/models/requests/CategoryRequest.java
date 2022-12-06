@@ -29,6 +29,5 @@ public class CategoryRequest {
     @Size(min = 5, max = 500, message = "Uri cannot be less than 5 or exceed 500 characters")
     private String uri;
 
-    @Nullable
     private List<Integer> parentIds;
 }
