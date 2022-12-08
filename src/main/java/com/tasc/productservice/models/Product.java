@@ -1,12 +1,7 @@
 package com.tasc.productservice.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author Truong Duc Duong
@@ -14,7 +9,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "products")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product extends BaseEntity {
@@ -31,11 +27,4 @@ public class Product extends BaseEntity {
     private String description;
     private String content;
 
-    public Product(String barcode, String name, String image, String description, String content) {
-        this.barcode = barcode;
-        this.name = name;
-        this.image = image;
-        this.description = description;
-        this.content = content;
-    }
 }

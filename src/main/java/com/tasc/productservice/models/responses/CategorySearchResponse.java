@@ -1,11 +1,7 @@
 package com.tasc.productservice.models.responses;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.math.BigInteger;
 import java.util.List;
 
 /**

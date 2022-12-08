@@ -2,9 +2,7 @@ package com.tasc.productservice.models.requests;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author Truong Duc Duong
@@ -33,5 +31,4 @@ public class ProductRequest {
     @NotNull(message = "Product's content must be filled")
     @Size(max = 500, message = "Content cannot exceed 500 characters")
     private String content;
-
 }
