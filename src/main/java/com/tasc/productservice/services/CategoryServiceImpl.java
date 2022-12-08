@@ -217,7 +217,7 @@ public class CategoryServiceImpl implements CategoryService {
     public Result getChildCategories(int id) {
         Result result;
         try {
-            List<Category> childCategories = categoryRepository.findChildren(id);
+            List<Category> childCategories = categoryRepository.findCategory(id).getChildren();
             if (childCategories.isEmpty()) {
                 result = new Result(0, "No children found");
             } else {
@@ -311,12 +311,12 @@ public class CategoryServiceImpl implements CategoryService {
             Category category = optionalCategory.get();
 
 //            if category has at least 1 parent mapping, continue browsing further ancestors
-            List<CategoryMapping> parentMappings = category.getParentCategoryMappings();
-            if (!parentMappings.isEmpty()) {
-                for (CategoryMapping parentMapping: parentMappings
+            List<Category> parents = category.getParents();
+            if (!parents.isEmpty()) {
+                for (Category parent: parents
                      ) {
 //                    Recursion
-                    rootCategories.addAll(getRootCategory(parentMapping.getParent().getId()));
+                    rootCategories.addAll(getRootCategory(parent.getId()));
                 }
 //                if category does not have any parent, add it to rootCategories
             } else {

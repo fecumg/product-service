@@ -1,5 +1,6 @@
 package com.tasc.productservice.models.responses;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.tasc.productservice.models.BaseEntity;
 import lombok.AllArgsConstructor;

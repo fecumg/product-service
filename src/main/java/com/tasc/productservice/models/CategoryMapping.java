@@ -30,8 +30,4 @@ public class CategoryMapping extends BaseEntity {
     @JoinColumn(name = "child_id")
     private Category child;
 
-    public CategoryMapping(Category parent, Category child) {
-        this.parent = parent;
-        this.child = child;
-    }
 }

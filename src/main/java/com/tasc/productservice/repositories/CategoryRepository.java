@@ -1,14 +1,12 @@
 package com.tasc.productservice.repositories;
 
 import com.tasc.productservice.models.Category;
-import com.tasc.productservice.models.Pagination;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -44,5 +42,8 @@ public interface CategoryRepository extends JpaRepository<Category, Integer>, Pa
             "from Category as c " +
             "where c.name like %?1%"
     )
-    BigInteger searchByNameCount(String searchText);
+    Long searchByNameCount(String searchText);
+
+    @Query(value = "select * from categories_with_relatives_view where id = ?1", nativeQuery = true)
+    Category findCategory(int id);
 }
