@@ -1,5 +1,6 @@
 package com.tasc.productservice.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,10 +20,12 @@ public class CategoryMapping extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @JsonManagedReference
     @ManyToOne()
     @JoinColumn(name = "parent_id")
     private Category parent ;
 
+    @JsonManagedReference
     @ManyToOne
     @JoinColumn(name = "child_id")
     private Category child;

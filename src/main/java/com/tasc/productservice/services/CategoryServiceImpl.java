@@ -11,7 +11,6 @@ import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -41,23 +40,14 @@ public class CategoryServiceImpl implements CategoryService {
     public Result save(CategoryRequest categoryRequest) {
         Result result;
         try {
-//            save new category
             Category category = modelMapper.map(categoryRequest, Category.class);
-            Category newCategory = categoryRepository.save(category);
-            CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
 
-//            Add new parent mappings
-            List<Integer> parentIds = categoryRequest.getParentIds();
-            int parentCount = 0;
-            if (!parentIds.isEmpty()) {
-                int childId = newCategory.getId();
-                for (int parentId: parentIds
-                ) {
-                    if (saveNewMapping(parentId, childId)) {
-                        parentCount ++;
-                    }
-                }
-            }
+            int parentCount = setParents(categoryRequest, category);
+
+//            save new category and mappings
+            Category newCategory = categoryRepository.save(category);
+            CategoryResponse categoryResponse = modelMapper.map(newCategory, CategoryResponse.class);
+
             result = new Result(0, "Success, " + parentCount + " parent mapping(s) added", categoryResponse);
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
@@ -70,32 +60,55 @@ public class CategoryServiceImpl implements CategoryService {
     public Result update(int id, CategoryRequest categoryRequest) {
         Result result;
         try {
-//            save edited category
-            Category category = modelMapper.map(categoryRequest, Category.class);
-            category.setId(id);
-            Category editedCategory = categoryRepository.save(category);
-            CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
 
-//            Delete all existing parent mappings
-            List<CategoryMapping> parentCategoryMappings = (List<CategoryMapping>) editedCategory.getParentCategoryMappings();
-            categoryMappingRepository.deleteAll(parentCategoryMappings);
+//            check if category with requested id exists
+            Optional<Category> optionalCurrentCategory = categoryRepository.findById(id);
+            if (optionalCurrentCategory.isPresent()) {
+                Category currentCategory = optionalCurrentCategory.get();
 
-//            Add new parent mappings
-            List<Integer> parentIds = categoryRequest.getParentIds();
-            int parentCount = 0;
-            if (!parentIds.isEmpty()) {
-                for (int parentId: parentIds
-                ) {
-                    if (saveNewMapping(parentId, id)) {
-                        parentCount ++;
-                    }
-                }
+//                map requested category to Category type
+                Category category = modelMapper.map(categoryRequest, Category.class);
+                category.setId(id);
+
+//                Delete all existing parent mappings
+                List<CategoryMapping> parentCategoryMappings = currentCategory.getParentCategoryMappings();
+                categoryMappingRepository.deleteAll(parentCategoryMappings);
+
+                int parentCount = setParents(categoryRequest, category);
+
+//                save edited category
+                Category editedCategory = categoryRepository.save(category);
+                CategoryResponse categoryResponse = modelMapper.map(editedCategory, CategoryResponse.class);
+
+                result = new Result(0, "Success, with " + parentCount + " parent mapping(s)", categoryResponse);
+            } else {
+                result = new Result(1, "Error: Category not found");
             }
-            result = new Result(0, "Success, with " + parentCount + " parent mapping(s)", categoryResponse);
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
         return result;
+    }
+
+    private int setParents(CategoryRequest categoryRequest, Category category) {
+//        find parent categories
+        List<Integer> parentIds = categoryRequest.getParentIds();
+        List<Category> parents = new ArrayList<>();
+        int parentCount = 0;
+        if (!parentIds.isEmpty()) {
+            for (int parentId: parentIds
+            ) {
+//                check if parent exists. If it does, add it to parents
+                Optional<Category> optionalParentCategory = categoryRepository.findById(parentId);
+                if (optionalParentCategory.isPresent()) {
+                    parents.add(optionalParentCategory.get());
+                    parentCount ++;
+                }
+            }
+        }
+//        set parents to category
+        category.setParents(parents);
+        return parentCount;
     }
 
     @Override
@@ -103,10 +116,18 @@ public class CategoryServiceImpl implements CategoryService {
     public Result delete(int id) {
         Result result;
         try {
-            List<CategoryMapping> categoryMappings = categoryMappingRepository.findAll();
-            deleteStackedCategories(id, categoryMappings);
+            Optional<Category> optionalCategory = categoryRepository.findById(id);
+            if (optionalCategory.isPresent()) {
+                Category category = optionalCategory.get();
+                List<Category> deletedCategories = stackDeletedCategories(category);
+                List<CategoryMapping> deletedMappings = stackDeletedMappings(category);
 
-            result = new Result(0, "Success");
+                categoryRepository.deleteAll(deletedCategories);
+                categoryMappingRepository.deleteAll(deletedMappings);
+                result = new Result(0, "Success");
+            } else {
+                result = new Result(1, "Category not found");
+            }
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
@@ -122,17 +143,14 @@ public class CategoryServiceImpl implements CategoryService {
                     pagination.getPageSize(),
                     Sort.by(pagination.getDirection(), pagination.getSortBy())
             );
-            Page<Category> categories = categoryRepository.findAll(pageRequest);
+            List<Category> categories = categoryRepository.findAll(pageRequest).getContent();
 
             List<CategoryResponse> categoryResponses = new ArrayList<>();
             if (categories.isEmpty()) {
                 result = new Result(0, "No categories fetched", categoryResponses);
             } else {
-                for (Category category: categories
-                ) {
-                    CategoryResponse categoryResponse = stackCategories(category.getId());
-                    categoryResponses.add(categoryResponse);
-                }
+                categoryResponses = modelMapper.map(categories, new TypeToken<List<CategoryResponse>>() {}.getType());
+
                 result = new Result(0, "Categories fetched", categoryResponses);
             }
         } catch (Exception e) {
@@ -145,11 +163,14 @@ public class CategoryServiceImpl implements CategoryService {
     public Result get(int id) {
         Result result;
         try {
-            CategoryResponse categoryResponse = stackCategories(id);
-            if (categoryResponse != null) {
+            Optional<Category> optionalCategory = categoryRepository.findById(id);
+            if (optionalCategory.isPresent()) {
+                Category category = optionalCategory.get();
+                CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
+
                 result = new Result(0, "Success", categoryResponse);
             } else {
-                result = new Result(1, "fail to retrieve data");
+                result = new Result(1, "Fail to retrieve data");
             }
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
@@ -162,12 +183,13 @@ public class CategoryServiceImpl implements CategoryService {
         Result result;
         try {
             List<Category> rootCategories = getRootCategory(id);
-            List<CategoryResponse> categoryResponses = new ArrayList<>();
-            for (Category root: rootCategories
-                 ) {
-                categoryResponses.add(stackCategories(root.getId()));
+            if (!rootCategories.isEmpty()) {
+                List<CategoryResponse> categoryResponses = modelMapper.map(rootCategories, new TypeToken<List<CategoryResponse>>() {}.getType());
+
+                result = new Result(0, "Category trees acquired", categoryResponses);
+            } else {
+                result = new Result(1, "Fail to retrieve data");
             }
-            result = new Result(0, "Category trees acquired", categoryResponses);
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
         }
@@ -229,29 +251,9 @@ public class CategoryServiceImpl implements CategoryService {
             log.info("search text: {}", text);
             CategorySearch categorySearch = categoryExtendedRepository.searchByName(text, pageRequest);
 
-//            convert categories from categorySearch to a list of CategoryResponse
-            List<CategoryResponse> categoryResponses = new ArrayList<>();
-            for (Category category: categorySearch.getCategories()
-            ) {
-                int id = category.getId();
-//                stack result categories and their children
-                CategoryResponse categoryResponse = stackCategories(id);
+            CategorySearchResponse categorySearchResponse = modelMapper.map(categorySearch, CategorySearchResponse.class);
 
-//                find parents, map to CategoryResponse and set to each categoryResponse
-                if (categoryResponse != null) {
-                    List<Category> parents = categoryRepository.findParents(id);
-                    List<CategoryResponse> parentResponses = modelMapper.map(parents, new TypeToken<List<CategoryResponse>>() {}.getType());
-                    categoryResponse.setParents(parentResponses);
-                }
-
-//                add to categoryResponses
-                categoryResponses.add(categoryResponse);
-            }
-//            set an instance of CategorySearchResponse, which consists of total quantity and categoryResponses, to result.data
-            long totalQuantity = categorySearch.getTotalQuantity();
-            CategorySearchResponse categorySearchResponse = new CategorySearchResponse(totalQuantity, categoryResponses);
-
-            result = new Result(0,   totalQuantity + " results found", categorySearchResponse);
+            result = new Result(0,   categorySearchResponse.getTotalQuantity() + " results found", categorySearchResponse);
             log.info("Searching process completed without errors");
         } catch (Exception e) {
             result = new Result(1, e.getMessage());
@@ -260,82 +262,44 @@ public class CategoryServiceImpl implements CategoryService {
         return result;
     }
 
-    private CategoryResponse stackCategories(int id) {
-//        if category with passed id exists, map it to response DTO
-        Optional<Category> optionalCategory = categoryRepository.findById(id);
-        if (optionalCategory.isPresent()) {
-            Category category = optionalCategory.get();
-            CategoryResponse categoryResponse = modelMapper.map(category, CategoryResponse.class);
+    private List<Category> stackDeletedCategories(Category category) {
+        List<Category> deletedCategories = new ArrayList<>();
+        deletedCategories.add(category);
 
-            List<CategoryResponse> childResponses = new ArrayList<>();
-//            get child mappings that associate with category
-            List<CategoryMapping> childMappings = (List<CategoryMapping>) category.getChildCategoryMappings();
-            if (!childMappings.isEmpty()) {
-                for (CategoryMapping childMapping: childMappings
-                ) {
-//                    Recursion. Call function itself, pass children's ids as parameters, add returned result to childResponses
-                    childResponses.add(stackCategories(childMapping.getChild().getId()));
-                }
-            }
-//            set stacked child categories to categoryResponse's children attribute
-            categoryResponse.setChildren(childResponses);
-            return categoryResponse;
-        } else {
-            return null;
-        }
-    }
-
-    private void deleteStackedCategories(int id, List<CategoryMapping> categoryMappings) {
-        List<Integer> nextLevelChildIds = getNextLevelChildIds(id, categoryMappings);
+        List<Category> nextLevelChildren = category.getChildren();
 
 //        browse all next level children's ids
-        for (Integer nextLevelChildId: nextLevelChildIds
+        for (Category nextLevelChild: nextLevelChildren
              ) {
 //            if a child category does NOT have another parent, delete it
-            if (!checkMultiParentCategory(nextLevelChildId, categoryMappings)) {
-                categoryRepository.deleteById(nextLevelChildId);
+            List<Category> parentsOfChild = nextLevelChild.getParents();
+            if (parentsOfChild.isEmpty() || parentsOfChild.size() < 2) {
+                deletedCategories.addAll(stackDeletedCategories(nextLevelChild));
             }
-//            delete mappings that consist of deleted category's id and its children's ids
-            CategoryMapping mapping = getMappingByChildAndParent(nextLevelChildId, id, categoryMappings);
-            categoryMappingRepository.delete(mapping);
-
-//            Recursion. Call the function itself and the parameter now is the next level children's ids
-            deleteStackedCategories(nextLevelChildId, categoryMappings);
         }
+        return deletedCategories;
     }
 
-    private List<Integer> getNextLevelChildIds(int parentId, List<CategoryMapping> categoryMappings) {
-        List<Integer> childIds = new ArrayList<>();
+    private List<CategoryMapping> stackDeletedMappings(Category category) {
+        List<CategoryMapping> deletedMappings = new ArrayList<>();
 
-        for (CategoryMapping mapping: categoryMappings
-        ) {
-            if (mapping.getParent().getId() == parentId) {
-                childIds.add(mapping.getChild().getId());
+        List<Category> nextLevelChildren = category.getChildren();
+
+        for (Category nextLevelChild: nextLevelChildren) {
+            List<Category> parentsOfChild = nextLevelChild.getParents();
+            if (parentsOfChild.isEmpty() || parentsOfChild.size() < 2) {
+                deletedMappings.addAll(stackDeletedMappings(nextLevelChild));
+            } else {
+                List<CategoryMapping> parentMappingsOfChild = nextLevelChild.getChildCategoryMappings();
+                for (CategoryMapping mapping: parentMappingsOfChild
+                     ) {
+                    if (mapping.getParent().getId() == category.getId()) {
+                        deletedMappings.add(mapping);
+                    }
+                }
             }
         }
-        return childIds;
-    }
-
-    private boolean checkMultiParentCategory(int id, List<CategoryMapping> categoryMappings) {
-        int parentCount = 0;
-        for (CategoryMapping mapping: categoryMappings
-             ) {
-            if (mapping.getChild().getId() == id) {
-                parentCount ++;
-            }
-        }
-        return parentCount >= 2;
-    }
-
-    private CategoryMapping getMappingByChildAndParent(int childId, int parentId, List<CategoryMapping> categoryMappings) {
-        CategoryMapping categoryMapping = new CategoryMapping();
-        for (CategoryMapping mapping: categoryMappings
-            ) {
-            if (mapping.getChild().getId() == childId && mapping.getParent().getId() == parentId) {
-                categoryMapping = mapping;
-            }
-        }
-        return categoryMapping;
+        return deletedMappings;
     }
 
     private List<Category> getRootCategory(int id) {
@@ -347,7 +311,7 @@ public class CategoryServiceImpl implements CategoryService {
             Category category = optionalCategory.get();
 
 //            if category has at least 1 parent mapping, continue browsing further ancestors
-            List<CategoryMapping> parentMappings = (List<CategoryMapping>) category.getParentCategoryMappings();
+            List<CategoryMapping> parentMappings = category.getParentCategoryMappings();
             if (!parentMappings.isEmpty()) {
                 for (CategoryMapping parentMapping: parentMappings
                      ) {
@@ -360,24 +324,5 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
         return rootCategories;
-    }
-
-    private boolean saveNewMapping(int parentId, int childId) {
-//          check whether child and parent categories exist. If they both do, create a new mapping that consists of them
-        Optional<Category> optionalParentCategory = categoryRepository.findById(parentId);
-        Optional<Category> optionalNewCategory = categoryRepository.findById(childId);
-        if (parentId != childId &&
-            optionalParentCategory.isPresent() &&
-            optionalNewCategory.isPresent()
-        ) {
-            CategoryMapping categoryMapping = new CategoryMapping(
-                    optionalParentCategory.get(),
-                    optionalNewCategory.get()
-            );
-            categoryMappingRepository.save(categoryMapping);
-            return true;
-        } else {
-            return false;
-        }
     }
 }

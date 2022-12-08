@@ -21,5 +21,5 @@ public class CategoryResponse extends BaseEntity {
     private int id;
     private String name, description, uri;
     private List<CategoryResponse> children = new ArrayList<>();
-    private List<CategoryResponse> parents = new ArrayList<>();
+//    private List<CategoryResponse> parents = new ArrayList<>();
 }
