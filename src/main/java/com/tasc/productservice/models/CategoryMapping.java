@@ -19,12 +19,10 @@ public class CategoryMapping extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @JsonManagedReference
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "parent_id")
     private Category parent ;
 
-    @JsonManagedReference
     @ManyToOne
     @JoinColumn(name = "child_id")
     private Category child;

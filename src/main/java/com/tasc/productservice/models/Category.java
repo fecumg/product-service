@@ -35,6 +35,7 @@ public class Category extends BaseEntity {
     @Size(max = 500)
     private String uri;
 
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     private List<CategoryMapping> childCategoryMappings;
 

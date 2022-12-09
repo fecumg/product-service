@@ -42,6 +42,7 @@ public class CategoryServiceImpl implements CategoryService {
         try {
             Category category = modelMapper.map(categoryRequest, Category.class);
 
+//            set parents
             int parentCount = setParents(categoryRequest, category);
 
 //            save new category and mappings
@@ -74,6 +75,7 @@ public class CategoryServiceImpl implements CategoryService {
                 List<CategoryMapping> parentCategoryMappings = currentCategory.getParentCategoryMappings();
                 categoryMappingRepository.deleteAll(parentCategoryMappings);
 
+//            set parents
                 int parentCount = setParents(categoryRequest, category);
 
 //                save edited category
@@ -182,7 +184,7 @@ public class CategoryServiceImpl implements CategoryService {
     public Result getStackedRootCategories (int id) {
         Result result;
         try {
-            List<Category> rootCategories = getRootCategory(id);
+            List<Category> rootCategories = getRootCategories(id);
             if (!rootCategories.isEmpty()) {
                 List<CategoryResponse> categoryResponses = modelMapper.map(rootCategories, new TypeToken<List<CategoryResponse>>() {}.getType());
 
@@ -302,7 +304,7 @@ public class CategoryServiceImpl implements CategoryService {
         return deletedMappings;
     }
 
-    private List<Category> getRootCategory(int id) {
+    private List<Category> getRootCategories(int id) {
         List<Category> rootCategories = new ArrayList<>();
 
 //        find category by passed id
@@ -316,7 +318,7 @@ public class CategoryServiceImpl implements CategoryService {
                 for (Category parent: parents
                      ) {
 //                    Recursion
-                    rootCategories.addAll(getRootCategory(parent.getId()));
+                    rootCategories.addAll(getRootCategories(parent.getId()));
                 }
 //                if category does not have any parent, add it to rootCategories
             } else {
