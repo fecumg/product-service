@@ -92,27 +92,6 @@ public class CategoryServiceImpl implements CategoryService {
         return result;
     }
 
-    private int setParents(CategoryRequest categoryRequest, Category category) {
-//        find parent categories
-        List<Integer> parentIds = categoryRequest.getParentIds();
-        List<Category> parents = new ArrayList<>();
-        int parentCount = 0;
-        if (!parentIds.isEmpty()) {
-            for (int parentId: parentIds
-            ) {
-//                check if parent exists. If it does, add it to parents
-                Optional<Category> optionalParentCategory = categoryRepository.findById(parentId);
-                if (optionalParentCategory.isPresent()) {
-                    parents.add(optionalParentCategory.get());
-                    parentCount ++;
-                }
-            }
-        }
-//        set parents to category
-        category.setParents(parents);
-        return parentCount;
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result delete(int id) {
@@ -262,6 +241,27 @@ public class CategoryServiceImpl implements CategoryService {
             log.error("Error: " + e.getMessage());
         }
         return result;
+    }
+
+    private int setParents(CategoryRequest categoryRequest, Category category) {
+//        find parent categories
+        List<Integer> parentIds = categoryRequest.getParentIds();
+        List<Category> parents = new ArrayList<>();
+        int parentCount = 0;
+        if (!parentIds.isEmpty()) {
+            for (int parentId: parentIds
+            ) {
+//                check if parent exists. If it does, add it to parents
+                Optional<Category> optionalParentCategory = categoryRepository.findById(parentId);
+                if (optionalParentCategory.isPresent()) {
+                    parents.add(optionalParentCategory.get());
+                    parentCount ++;
+                }
+            }
+        }
+//        set parents to category
+        category.setParents(parents);
+        return parentCount;
     }
 
     private List<Category> stackDeletedCategories(Category category) {
